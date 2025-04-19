@@ -5,13 +5,11 @@ import pandas as pd
 from itertools import cycle
 from functools import lru_cache
 
-# Load Hugging Face API keys
-hf_api_keys = [
-    st.secrets["huggingface"]["HF_API_KEY_1"],
-    st.secrets["huggingface"]["HF_API_KEY_2"],
-    st.secrets["huggingface"]["HF_API_KEY_3"],
-    st.secrets["huggingface"]["HF_API_KEY_4"],
-    st.secrets["huggingface"]["HF_API_KEY_5"]
+# Load API keys from secrets
+api_keys = [
+    st.secrets["huggingface"]["key1"],
+    st.secrets["huggingface"]["key2"],
+    st.secrets["huggingface"]["key3"]
 ]
 api_key_cycle = cycle(hf_api_keys)
 
