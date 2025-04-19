@@ -53,7 +53,7 @@ def get_hf_response(question, model_id="mistralai/Mistral-7B-Instruct-v0.1"):
     return "❌ All API keys failed or quota exhausted."
 
 # Set up Streamlit layout
-st.set_page_config(page_title="NextLeap - Career Guide", layout="wide")
+st.set_page_config(page_title="Beacon - Career Guide", layout="wide")
 
 # Sidebar
 st.sidebar.title("Navigation")
@@ -112,12 +112,12 @@ elif nav_selection == "Best Earning Jobs":
 elif nav_selection == "Contact":
     st.title("Contact Us")
     st.write("For inquiries, reach out at:")
-    st.write("Email: support@nextleap.com")
-    st.write("Website: [NextLeap](https://roadmapgenerator-x3jmrdqlpa6awk6wambbxv.streamlit.app)")
+    st.write("📧 Email: support@beaconcareer.com")
+    st.write("🌐 Website: [Beacon](https://roadmapgenerator-x3jmrdqlpa6awk6wambbxv.streamlit.app)")
 
 # Main Career Generator
 else:
-    st.title("NextLeap : Career Roadmap Generator")
+    st.title("Beacon : Career Roadmap Generator")
     st.write("Get a structured career roadmap with learning resources tailored to your job title.")
     tab1, tab2, tab3, tab4 = st.tabs(["Career Roadmap", "Recommended Courses", "Live Job Listings", "Videos"])
 
