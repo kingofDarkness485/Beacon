@@ -5,36 +5,34 @@ import pandas as pd
 from itertools import cycle
 from functools import lru_cache
 
-# Load API keys from secrets
+# Load API keys from Streamlit secrets
 api_keys = [
     st.secrets["huggingface"]["key1"],
     st.secrets["huggingface"]["key2"],
     st.secrets["huggingface"]["key3"]
 ]
-api_key_cycle = cycle(hf_api_keys)
+api_key_cycle = cycle(api_keys)
 
 @lru_cache(maxsize=50)
 def get_hf_response(question, model_id="mistralai/Mistral-7B-Instruct-v0.1"):
     """Fetch AI-generated responses from Hugging Face API, rotating keys on errors."""
     api_url = f"https://api-inference.huggingface.co/models/{model_id}"
     headers_template = lambda key: {"Authorization": f"Bearer {key}"}
-    
-    for _ in range(len(hf_api_keys)):
+
+    for _ in range(len(api_keys)):
         api_key = next(api_key_cycle)
         headers = headers_template(api_key)
 
         try:
             response = requests.post(api_url, headers=headers, json={"inputs": question})
-            
+
             if response.status_code == 429:
                 wait_time = int(response.headers.get("Retry-After", 10))
-                st.warning(f"Rate limit hit for one key. Retrying in {wait_time}s...")
+                st.warning(f"Rate limit hit. Retrying in {wait_time}s...")
                 time.sleep(wait_time)
                 continue
-
             elif response.status_code == 402:
-                # Silent skip on payment issue, no warning message
-                continue
+                continue  # Payment required, silently skip this key
 
             response.raise_for_status()
             response_data = response.json()
@@ -49,18 +47,19 @@ def get_hf_response(question, model_id="mistralai/Mistral-7B-Instruct-v0.1"):
                 continue
 
         except requests.exceptions.RequestException as e:
-            st.warning(f"Error with API key: {api_key[:5]}... — {e}")
+            st.warning(f"Error with API key {api_key[:5]}... — {e}")
             continue
 
     return "❌ All API keys failed or quota exhausted."
 
-# Streamlit UI
+# Set up Streamlit layout
 st.set_page_config(page_title="NextLeap - Career Guide", layout="wide")
 
-# Sidebar Navigation
+# Sidebar
 st.sidebar.title("Navigation")
 nav_selection = st.sidebar.radio("Go to:", ["Home", "Pre-Generated Roadmaps", "Best Earning Jobs", "Contact"])
 
+# Pre-Generated Career Roadmaps
 if nav_selection == "Pre-Generated Roadmaps":
     st.title("Pre-Generated Career Roadmaps")
     pre_generated = {
@@ -89,13 +88,14 @@ if nav_selection == "Pre-Generated Roadmaps":
             "url": "https://cloud.google.com/training"
         }
     }
-    
+
     for job, details in pre_generated.items():
         st.subheader(job)
         st.markdown(details["roadmap"].replace("\n", "\n\n"))
         st.markdown(f"[Reference: {job} Roadmap]({details['url']})")
         st.markdown("---")
 
+# Best Earning Jobs
 elif nav_selection == "Best Earning Jobs":
     st.title("Best Earning Jobs & Salaries")
     jobs_data = [
@@ -108,21 +108,23 @@ elif nav_selection == "Best Earning Jobs":
     df = pd.DataFrame(jobs_data)
     st.dataframe(df)
 
+# Contact Section
 elif nav_selection == "Contact":
     st.title("Contact Us")
     st.write("For inquiries, reach out at:")
     st.write("Email: support@nextleap.com")
     st.write("Website: [NextLeap](https://roadmapgenerator-x3jmrdqlpa6awk6wambbxv.streamlit.app)")
 
+# Main Career Generator
 else:
     st.title("NextLeap : Career Roadmap Generator")
     st.write("Get a structured career roadmap with learning resources tailored to your job title.")
     tab1, tab2, tab3, tab4 = st.tabs(["Career Roadmap", "Recommended Courses", "Live Job Listings", "Videos"])
-    
+
     with tab1:
         job_title = st.text_input("Enter the job title:", key="job_title", placeholder="e.g., Data Scientist")
         submit = st.button("Generate Roadmap")
-        
+
         if submit and job_title:
             input_prompt = f"Provide a professional, step-by-step career roadmap for {job_title}. Include reference URLs if available."
             response = get_hf_response(input_prompt)
@@ -130,15 +132,15 @@ else:
             with st.expander("See Full Details"):
                 st.markdown(response.replace("\n", "\n\n"))
             st.success("Roadmap generated successfully.")
-            
+
             with tab2:
                 courses = get_hf_response(f"List top online courses for {job_title}.")
                 st.markdown(courses.replace("\n", "\n\n"))
-            
+
             with tab3:
-                jobs = get_hf_response(f"List top job openings for {job_title}.")            
+                jobs = get_hf_response(f"List top job openings for {job_title}.")
                 st.markdown(jobs.replace("\n", "\n\n"))
-            
+
             with tab4:
                 videos = get_hf_response(f"List top YouTube videos for {job_title} career guidance.")
                 st.markdown(videos.replace("\n", "\n\n"))
