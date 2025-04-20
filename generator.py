@@ -13,8 +13,11 @@ api_keys = [
 ]
 api_key_cycle = cycle(api_keys)
 
+# Set OpenAssistant model
+MODEL_ID = "OpenAssistant/oasst-sft-1-pythia-12b"
+
 @lru_cache(maxsize=50)
-def get_hf_response(question, model_id="mistralai/Mistral-7B-Instruct-v0.1"):
+def get_hf_response(question, model_id=MODEL_ID):
     """Fetch AI-generated responses from Hugging Face API, rotating keys on errors."""
     api_url = f"https://api-inference.huggingface.co/models/{model_id}"
     headers_template = lambda key: {"Authorization": f"Bearer {key}"}
@@ -31,20 +34,28 @@ def get_hf_response(question, model_id="mistralai/Mistral-7B-Instruct-v0.1"):
                 st.warning(f"Rate limit hit. Retrying in {wait_time}s...")
                 time.sleep(wait_time)
                 continue
-            elif response.status_code == 402:
-                continue  # Payment required, silently skip this key
+            elif response.status_code in (402, 403):
+                st.warning(f"Access denied or quota issue with API key {api_key[:5]}... — {response.status_code}")
+                continue
 
             response.raise_for_status()
             response_data = response.json()
 
+            # Some models return 'generated_text', others return a dict with 'text'
             if isinstance(response_data, list) and 'generated_text' in response_data[0]:
                 output = response_data[0]['generated_text']
-                if output.startswith(question):
-                    output = output[len(question):].strip()
-                return output
+            elif isinstance(response_data, dict) and 'generated_text' in response_data:
+                output = response_data['generated_text']
+            elif isinstance(response_data, list) and 'text' in response_data[0]:
+                output = response_data[0]['text']
             else:
                 st.warning(f"Unexpected response format: {response_data}")
                 continue
+
+            if output.startswith(question):
+                output = output[len(question):].strip()
+
+            return output
 
         except requests.exceptions.RequestException as e:
             st.warning(f"Error with API key {api_key[:5]}... — {e}")
@@ -52,7 +63,7 @@ def get_hf_response(question, model_id="mistralai/Mistral-7B-Instruct-v0.1"):
 
     return "❌ All API keys failed or quota exhausted."
 
-# Set up Streamlit layout
+# Streamlit app layout
 st.set_page_config(page_title="Beacon - Career Guide", layout="wide")
 
 # Sidebar
