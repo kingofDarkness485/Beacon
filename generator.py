@@ -15,6 +15,9 @@ api_key_cycle = cycle(api_keys)
 
 @lru_cache(maxsize=50)
 def get_hf_response(question, model_id = "mistralai/Mixtral-8x7B-Instruct-v0.1"):
+    """Fetch AI-generated responses from Hugging Face API, rotating keys on errors."""
+    api_url = f"https://api-inference.huggingface.co/models/{model_id}"
+    headers_template = lambda key: {"Authorization": f"Bearer {key}"}
 
     for _ in range(len(api_keys)):
         api_key = next(api_key_cycle)
