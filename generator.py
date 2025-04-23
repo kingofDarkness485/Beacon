@@ -14,15 +14,11 @@ api_keys = [
 api_key_cycle = cycle(api_keys)
 
 @lru_cache(maxsize=50)
-def get_hf_response(question, model_id="tiiuae/falcon-7b-instruct"):
-    """Fetch AI-generated responses from Hugging Face API."""
-    import requests
+@lru_cache(maxsize=50)
+def get_hf_response(question, model_id="mistralai/Mistral-7B-Instruct-v0.1"):
+    """Fetch AI-generated responses from Hugging Face API, rotating keys on errors."""
     api_url = f"https://api-inference.huggingface.co/models/{model_id}"
-    headers = {"Authorization": f"Bearer YOUR_HF_TOKEN"}  # Replace with your HF token
-    payload = {"inputs": question}
-    response = requests.post(api_url, headers=headers, json=payload)
-    return response.json()
-
+    headers_template = lambda key: {"Authorization": f"Bearer {key}"}
 
     for _ in range(len(api_keys)):
         api_key = next(api_key_cycle)
